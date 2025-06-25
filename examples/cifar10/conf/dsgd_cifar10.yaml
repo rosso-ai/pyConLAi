@@ -1,0 +1,21 @@
+# common_args:
+repo_name: "cifar10_resnet18"
+random_seed: 42
+
+# data_args:
+data_cache_dir: "./.data_cache"
+partition_method: "hetero"
+partition_alpha: 100.
+
+# train_args:
+fed_optimizer: "dsgd"
+comm_round: 100
+batch_size: 100
+inner_loop: 20
+
+# device_args:
+worker_num: 4
+device: "cuda"
+
+# comm_args:
+server_url: "localhost:9200"
