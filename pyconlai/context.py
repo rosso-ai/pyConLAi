@@ -28,7 +28,7 @@ class ConLArguments:
     @classmethod
     def from_yml(cls, yml_path: str):
         loaded = OmegaConf.load(yml_path)
-        read_conf = ConLArguments(**loaded.ns_vfl)
+        read_conf = ConLArguments(**loaded)
 
         base_conf = OmegaConf.structured(ConLArguments)
         merged = OmegaConf.merge(base_conf, read_conf)
