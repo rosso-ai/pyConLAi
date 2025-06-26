@@ -7,7 +7,6 @@ import torch.nn as nn
 from torchvision import models
 from torchvision import datasets
 from torchvision.transforms import ToTensor
-from omegaconf import OmegaConf
 from multiprocessing import Process
 
 formatter = '%(asctime)s [%(name)s] %(levelname)s :  %(message)s'
@@ -23,8 +22,8 @@ def run_client(args, client_id, train_data_loader, test_data_loader, device="cpu
     org_optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=0.01)
 
     sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
-    from conlai.optimizer import load_optimizer
-    optimizer = load_optimizer(args, org_optimizer, model.parameters())
+    from pyconlai.optimizer import DSgd
+    optimizer = DSgd(args, org_optimizer, model.parameters())
     criterion = nn.CrossEntropyLoss()
 
     logger = logging.getLogger("ConLAi-Tra%02d" % client_id)
@@ -99,10 +98,9 @@ def main():
     args = arg_parser.parse_args()
 
     sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
-    from conlai import ConLArguments
-    from conlai.datasets import FedDatasetsClassification
-    config = OmegaConf.load(args.config_path)
-    conl_args = ConLArguments(**config)
+    from pyconlai import ConLArguments
+    from pyconlai.datasets import FedDatasetsClassification
+    conl_args = ConLArguments.from_yml(args.config_path)
 
     train_data = datasets.CIFAR10(root=conl_args.data_cache_dir, train=True, download=True, transform=ToTensor())
     valid_data = datasets.CIFAR10(root=conl_args.data_cache_dir, train=False, download=True, transform=ToTensor())

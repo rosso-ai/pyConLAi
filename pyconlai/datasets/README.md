@@ -13,7 +13,7 @@ Class Dataloader of PyTorch is returned.
 from omegaconf import OmegaConf
 from torchvision import datasets
 from torchvision.transforms import ToTensor
-from conlai.datasets import FedDatasetsClassification
+from pyconlai.datasets import FedDatasetsClassification
 
 conf = OmegaConf.load("./config.yml")
 
