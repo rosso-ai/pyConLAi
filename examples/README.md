@@ -1,5 +1,5 @@
 # ConLAi Toys Example
-ConLAi の example 集です  
+A collection of ConLAi examples.  
 
 ## examples
 

@@ -42,7 +42,7 @@ def run_client(args, client_id, train_data_loader, test_data_loader, device="cpu
             labels = labels.long()
 
             log_probs = model(x)
-            loss = criterion(log_probs, labels)  # pylint: disable=E1102
+            loss = criterion(log_probs, labels)
             loss.backward()
             batch_loss.append(loss.item())
 
@@ -64,7 +64,7 @@ def run_client(args, client_id, train_data_loader, test_data_loader, device="cpu
                 target = target.to(device)
                 pred = model(x)
                 target = target.long()
-                loss = criterion(pred, target)  # pylint: disable=E1102
+                loss = criterion(pred, target)
 
                 _, predicted = torch.max(pred, 1)
                 c = (predicted == target).squeeze()
