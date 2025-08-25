@@ -7,12 +7,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/pyconlai
-    permissions:
-      id-token: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,8 +33,27 @@ jobs:
           release_name: ${{ github.ref }}
           draft: false
           prerelease: false
+
       - name: Store the distribution packages
         uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish-to-pypi:
+    name: Publish to PyPI
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pyconlai
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
         with:
           name: python-package-distributions
           path: dist/
