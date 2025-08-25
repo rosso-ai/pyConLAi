@@ -1,8 +1,6 @@
 name: BUILD_AND_RELEASE
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*.*.*'
 
