@@ -1,13 +1,13 @@
 # pyConLAi
-Client optimizer for use with ConLAi which is ledger type federated learning framework  
-
-![features](https://github.com/rosso-ai/pyConLAi/docs/images/conlai_features.png)
+Client optimizer for use with ConLAi which is ledger type federated learning framework
 
 ## What's ConLAi?
 Con(sensus)L(erning) Ai is server module for Ledger type federated learning.
 Ledger type federated learning achieves federated learning in a way that feels like Git.
 
-## Install
+![features](https://github.com/rosso-ai/pyConLAi/blob/main/docs/images/conlai_features.png?raw=true)
+
+## How to Install
 from PyPi:  
 ```shell
 pip install pyconlai
