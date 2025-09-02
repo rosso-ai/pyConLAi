@@ -36,8 +36,8 @@ class ConLPoCArguments:
     @classmethod
     def from_yml(cls, yml_path: str):
         loaded = OmegaConf.load(yml_path)
-        read_conf = ConLArguments(**loaded.poc)
+        read_conf = ConLPoCArguments(**loaded.poc)
 
-        base_conf = OmegaConf.structured(ConLArguments)
+        base_conf = OmegaConf.structured(ConLPoCArguments)
         merged = OmegaConf.merge(base_conf, read_conf)
         return cls(**merged)
