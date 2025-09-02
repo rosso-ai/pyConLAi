@@ -2,20 +2,19 @@ import numpy as np
 from typing import Dict
 from torch.utils.data import Dataset, DataLoader
 from .mixin import FedDatasetsMixin, FedInnerLoopSampler
+from ..context import ConLArguments, ConLPoCArguments
 
 
 class FedDatasetsClassification(FedDatasetsMixin):
-    def __init__(self, clients_num: int, batch_size: int, inner_loop: int, partition_method: str, partition_alpha: float,
+    def __init__(self, net_args: ConLArguments, poc_args: ConLPoCArguments, batch_size: int,
                  train_data: Dataset, valid_data: Dataset, class_num: int, min_len=10):
-        super().__init__(batch_size, clients_num, train_data, valid_data, class_num)
-        self._partition_method = partition_method
-        self._partition_alpha = partition_alpha
+        super().__init__(net_args, poc_args, batch_size, train_data, valid_data, class_num)
 
         indices = self._partition_data(self._train_data, self._train_data_num, min_len)
-        self._fed_train_data_loader, self._fed_train_data_num = self._build_datasets(batch_size, inner_loop, self._train_data, indices)
+        self._fed_train_data_loader, self._fed_train_data_num = self._build_datasets(self._train_data, indices)
 
         indices = self._partition_data(self._valid_data, self._valid_data_num, min_len)
-        self._fed_valid_data_loader, _ = self._build_datasets(batch_size, inner_loop, self._valid_data, indices)
+        self._fed_valid_data_loader, _ = self._build_datasets(self._valid_data, indices)
 
     def _partition_data(self, dataset: Dataset, n_data: int, min_len: int):
         net_data_idx_map = {}
@@ -63,12 +62,12 @@ class FedDatasetsClassification(FedDatasetsMixin):
                                   (i, len(net_data_idx_map[i]), n_data))
         return net_data_idx_map
 
-    def _build_datasets(self, batch_size: int, inner_loop: int, dataset: Dataset, indices: Dict) -> (Dict, Dict):
+    def _build_datasets(self, dataset: Dataset, indices: Dict) -> (Dict, Dict):
         dataloader = {}
         datasize = {}
 
         for client_idx in range(self._clients_num):
-            _sampler = FedInnerLoopSampler(batch_size, inner_loop, indices[client_idx])
+            _sampler = FedInnerLoopSampler(self._batch_size, self._inner_loop, indices[client_idx])
             dataloader[client_idx] = DataLoader(dataset=dataset, batch_size=self._batch_size, sampler=_sampler)
             datasize[client_idx] = len(indices[client_idx])
 

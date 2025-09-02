@@ -36,6 +36,9 @@ cd examples/cifar10
 python run.py conf/dsgd_cifar10.yml
 ```
 
+For details, please see [CIFAR10 example README](https://github.com/rosso-ai/pyConLAi/tree/main/examples/cifar10).
+
+
 ## License
 This client software is Apache-2.0 license.  
 

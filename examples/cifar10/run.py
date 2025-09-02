@@ -1,5 +1,3 @@
-import sys
-import os
 import logging
 import argparse
 import torch
@@ -8,22 +6,23 @@ from torchvision import models
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 from multiprocessing import Process
+from pyconlai import ConLArguments, ConLPoCArguments, DSgd, FedDatasetsClassification
 
 formatter = '%(asctime)s [%(name)s] %(levelname)s :  %(message)s'
 logging.basicConfig(level=logging.INFO, format=formatter)
 
+batch_size = 100
+num_rounds = 100
+
 def run_client(args, client_id, train_data_loader, test_data_loader, device="cpu"):
     round_idx = 0
-    num_rounds = args.comm_round
 
     model = models.resnet18()
 
     # Preliminary: Optimizer can be anything
     org_optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=0.01)
-
-    sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
-    from pyconlai.optimizer import DSgd
     optimizer = DSgd(args, org_optimizer, model.parameters())
+
     criterion = nn.CrossEntropyLoss()
 
     logger = logging.getLogger("ConLAi-Tra%02d" % client_id)
@@ -97,20 +96,18 @@ def main():
     arg_parser.add_argument("config_path", type=str, help="path of config file")
     args = arg_parser.parse_args()
 
-    sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
-    from pyconlai import ConLArguments
-    from pyconlai.datasets import FedDatasetsClassification
-    conl_args = ConLArguments.from_yml(args.config_path)
+    net_args = ConLArguments.from_yml(args.config_path)
+    poc_args = ConLPoCArguments.from_yml(args.config_path)
 
-    train_data = datasets.CIFAR10(root=conl_args.data_cache_dir, train=True, download=True, transform=ToTensor())
-    valid_data = datasets.CIFAR10(root=conl_args.data_cache_dir, train=False, download=True, transform=ToTensor())
-    fed_datasets = FedDatasetsClassification(conl_args.worker_num, conl_args.batch_size, conl_args.inner_loop,
-                                             conl_args.partition_method, conl_args.partition_alpha,
-                                             train_data, valid_data, 10)
+    train_data = datasets.CIFAR10(root=poc_args.data_cache_dir, train=True, download=True, transform=ToTensor())
+    valid_data = datasets.CIFAR10(root=poc_args.data_cache_dir, train=False, download=True, transform=ToTensor())
+    # Split the CIFAR10 dataset for each client
+    fed_datasets = FedDatasetsClassification(net_args, poc_args, batch_size,
+                                             train_data, valid_data, class_num=10)
 
     clients = []
-    for client_id in range(conl_args.worker_num):
-        client = Process(target=run_client, args=(conl_args, client_id,
+    for client_id in range(poc_args.worker_num):
+        client = Process(target=run_client, args=(net_args, client_id,
                                                   fed_datasets.fed_dataset(client_id)["train"],
                                                   fed_datasets.fed_dataset(client_id)["valid"],
                                                   "cuda"))
