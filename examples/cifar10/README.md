@@ -13,14 +13,6 @@ python run.py ./conf/dsgd_cifar10_mobilenet.yaml
 ### Config file
 This example uses the following configuration file:
 ```yaml
-# Settings for connecting to the server
-net:
-  server_url: "localhost:9200"
-  repo_name: "cifar10_resnet18"
-
-  # Communication frequency during learning
-  inner_loop: 10
-
 # PoC mode settings
 poc:
   # Data settings for CIFAR10
@@ -34,37 +26,45 @@ poc:
 ```
 
 ### About run.py
-#### 1. Load config
-Call the above configuration file using the following steps:
+#### 1. Prepare datasets and run clients
+Splitting the CIFAR10 dataset for clients:
 ```python
-    arg_parser = argparse.ArgumentParser()
-    arg_parser.add_argument("config_path", type=str, help="path of config file")
-    args = arg_parser.parse_args()
+server_path = "localhost:9200"
+batch_size = 100
+inner_loop = 20
 
-    net_args = ConLArguments.from_yml(args.config_path)
-    poc_args = ConLPoCArguments.from_yml(args.config_path)
+poc_args = ConLPoCArguments.from_yml(args.config_path)
+
+train_data = datasets.CIFAR10(root=poc_args.data_cache_dir, train=True, download=True, transform=ToTensor())
+valid_data = datasets.CIFAR10(root=poc_args.data_cache_dir, train=False, download=True, transform=ToTensor())
+# Split the CIFAR10 dataset for each client
+fed_datasets = FedDatasetsClassification(poc_args, train_data, valid_data, batch_size, inner_loop, class_num=10)
 ```
 
-#### 2. Prepare datasets
-Splitting the CIFAR10 dataset for a client:
+and, run each client in multiple processes. 
 ```python
-    train_data = datasets.CIFAR10(root=poc_args.data_cache_dir, train=True, download=True, transform=ToTensor())
-    valid_data = datasets.CIFAR10(root=poc_args.data_cache_dir, train=False, download=True, transform=ToTensor())
-    # Split the CIFAR10 dataset for each client
-    fed_datasets = FedDatasetsClassification(net_args, poc_args, batch_size,
-                                             train_data, valid_data, class_num=10)
+clients = []
+for client_id in range(poc_args.worker_num):
+    client = Process(target=run_client, args=(client_id,
+                                              fed_datasets.fed_dataset(client_id)["train"],
+                                              fed_datasets.fed_dataset(client_id)["valid"],
+                                              "cuda"))
+    client.start()
+    clients.append(client)
+
+for client in clients:
+    client.join()
 ```
 
-and, run each client in multiple processes.  
-
-#### 3. Optimizer setting
+#### 2. Optimizer setting
 Configure the Optimizer to communicate with the server:
 ```python
-    # Preliminary: Optimizer can be anything
-    org_optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=0.01)
-    optimizer = DSgd(args, org_optimizer, model.parameters())
-    # (args = net_args)
+server_path = "localhost:9200"
+
+# Preliminary: Optimizer can be anything
+org_optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=0.01)
+optimizer = DSgd(server_path, org_optimizer, model.parameters(), inner_loop=inner_loop)
 ```
 
-#### 4. Start Training
+#### 3. Start Training
 Start training using the same procedure as normal PyTorch training.

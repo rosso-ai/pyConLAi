@@ -9,19 +9,19 @@ from ..pb import ConLParams, ConLMetrics
 
 
 class ConLOptimizer(Optimizer, metaclass=ABCMeta):
-    def __init__(self, args, org_optimizer, parameters):
+    def __init__(self, path: str, org_optimizer: Optimizer, parameters, inner_loop: int = 10, eta: float=0.1):
         self._org_optimizer = org_optimizer
-        self._server_url = args.server_url
+        self._server_url = path
         self._round = 0
-        self._inner_loop = args.inner_loop
+        self._inner_loop = inner_loop
         self._inner_cnt = 0
         self._diff_latest = 0.
         self._criterion = nn.MSELoss(reduction="sum")
 
-        ws_target_url = "ws://%s/ws" % args.server_url
+        ws_target_url = "ws://%s/ws" % path
         self._ws = websocket.create_connection(ws_target_url)
 
-        defaults = dict(eta=args.eta)
+        defaults = dict(eta=eta)
         super().__init__(filter(lambda p: p.requires_grad, parameters), defaults)
 
     def __del__(self):

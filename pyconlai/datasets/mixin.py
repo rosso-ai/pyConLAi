@@ -2,17 +2,17 @@ from typing import List
 from logging import getLogger
 from abc import ABCMeta
 from torch.utils.data import Dataset, DataLoader, sampler
-from ..context import ConLArguments, ConLPoCArguments
+from ..context import ConLPoCArguments
 
 
 class FedDatasetsMixin(metaclass=ABCMeta):
-    def __init__(self, net_args: ConLArguments, poc_args: ConLPoCArguments,
-                 batch_size: int, train_data: Dataset, valid_data: Dataset, class_num=0):
+    def __init__(self, poc_args: ConLPoCArguments, train_data: Dataset, valid_data: Dataset,
+                 batch_size: int, inner_loop: int =10, class_num=0):
         self._train_data = train_data
         self._valid_data = valid_data
         self._class_num = class_num
         self._batch_size = batch_size
-        self._inner_loop = net_args.inner_loop
+        self._inner_loop = inner_loop
         self._clients_num = poc_args.worker_num
         self._random_seed = poc_args.random_seed
 

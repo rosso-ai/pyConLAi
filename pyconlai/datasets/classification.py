@@ -2,13 +2,13 @@ import numpy as np
 from typing import Dict
 from torch.utils.data import Dataset, DataLoader
 from .mixin import FedDatasetsMixin, FedInnerLoopSampler
-from ..context import ConLArguments, ConLPoCArguments
+from ..context import ConLPoCArguments
 
 
 class FedDatasetsClassification(FedDatasetsMixin):
-    def __init__(self, net_args: ConLArguments, poc_args: ConLPoCArguments, batch_size: int,
-                 train_data: Dataset, valid_data: Dataset, class_num: int, min_len=10):
-        super().__init__(net_args, poc_args, batch_size, train_data, valid_data, class_num)
+    def __init__(self, poc_args: ConLPoCArguments, train_data: Dataset, valid_data: Dataset,
+                 batch_size: int, inner_loop: int = 10, class_num: int = 0, min_len=10):
+        super().__init__(poc_args, train_data, valid_data, batch_size, inner_loop, class_num)
 
         indices = self._partition_data(self._train_data, self._train_data_num, min_len)
         self._fed_train_data_loader, self._fed_train_data_num = self._build_datasets(self._train_data, indices)

@@ -1,11 +1,12 @@
+from torch.optim.optimizer import Optimizer
 from .mixin import ConLOptimizer
 
 
 class DSgd(ConLOptimizer):
     STATE_P = "state_p"
 
-    def __init__(self, args, org_optimizer, parameters):
-        super(DSgd, self).__init__(args, org_optimizer, parameters)
+    def __init__(self, path: str, org_optimizer: Optimizer, parameters, inner_loop: int = 10):
+        super(DSgd, self).__init__(path, org_optimizer, parameters, inner_loop)
 
     def __setstate__(self, state):
         super(DSgd, self).__setstate__(state)
