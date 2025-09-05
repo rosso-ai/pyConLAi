@@ -1,11 +1,3 @@
-# Settings for connecting to the server
-net:
-  server_url: "localhost:9200"
-  repo_name: "cifar10_resnet18"
-
-  # Communication frequency during learning
-  inner_loop: 10
-
 # PoC mode settings
 poc:
   # Data settings for CIFAR10
