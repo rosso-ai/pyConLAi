@@ -6,7 +6,7 @@ poc:
   partition_alpha: 10.
   random_seed: 42
 
-  optimizer: "dsgd"
+  optimizer: "lscaffold"
 
   # Number of clients to launch
   worker_num: 2

@@ -4,25 +4,24 @@ import torch
 import torch.nn as nn
 from torchvision import models
 from torchvision import datasets
-from torchvision.transforms import ToTensor
+from torchvision.transforms import transforms
 from multiprocessing import Process
-from pyconlai import DSgd, ConLPoCArguments, FedDatasetsClassification
+from pyconlai import load_optimizer, ConLPoCArguments, FedDatasetsClassification
 
 formatter = '%(asctime)s [%(name)s] %(levelname)s :  %(message)s'
 logging.basicConfig(level=logging.INFO, format=formatter)
 
 server_path = "localhost:9200"
-batch_size = 100
-inner_loop = 20
-num_rounds = 100
+batch_size = 128
+num_rounds = 30
 
-def run_client(client_id, train_data_loader, test_data_loader, device="cpu"):
+def run_client(client_id: int, opt_key: str, train_data_loader, test_data_loader, device="cpu", inner_loop=20):
     round_idx = 0
     model = models.resnet18()
 
     # Preliminary: Optimizer can be anything
-    org_optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=0.01)
-    optimizer = DSgd(server_path, org_optimizer, model.parameters(), inner_loop=inner_loop)
+    org_optimizer = torch.optim.SGD(model.parameters(), lr=0.01, weight_decay=1e-4)
+    optimizer = load_optimizer(opt_key, server_path, org_optimizer, model.parameters(), inner_loop=inner_loop)
 
     criterion = nn.CrossEntropyLoss()
 
@@ -81,7 +80,7 @@ def run_client(client_id, train_data_loader, test_data_loader, device="cpu"):
             metrics["accuracy"] = correct / total
             metrics["loss"] = sum(loss_ary) / len(loss_ary)
 
-        logger.info("Round= {:4d} \tAcc: {:.6f} \tLoss: {:.6f} \tDiff: {:.8f} \tK: {:2d}".format(
+        logger.info("Epoch= {:4d} \tAcc: {:.6f} \tLoss: {:.6f} \tDiff: {:.8f} \tK: {:2d}".format(
             round_idx, metrics["accuracy"], metrics["loss"], optimizer.diff, optimizer.inner_loop))
 
         # round update
@@ -95,21 +94,29 @@ def run_client(client_id, train_data_loader, test_data_loader, device="cpu"):
 def main():
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("config_path", type=str, help="path of config file")
+    arg_parser.add_argument("--device", type=str, default="cuda", help="device name (cuda or cpu)")
+    arg_parser.add_argument("--inner_loop", type=int, default=20, help="communication frequency")
     args = arg_parser.parse_args()
 
     poc_args = ConLPoCArguments.from_yml(args.config_path)
 
-    train_data = datasets.CIFAR10(root=poc_args.data_cache_dir, train=True, download=True, transform=ToTensor())
-    valid_data = datasets.CIFAR10(root=poc_args.data_cache_dir, train=False, download=True, transform=ToTensor())
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    ])
+    train_data = datasets.CIFAR10(root=poc_args.data_cache_dir, train=True, download=True, transform=transform)
+    valid_data = datasets.CIFAR10(root=poc_args.data_cache_dir, train=False, download=True, transform=transform)
     # Split the CIFAR10 dataset for each client
-    fed_datasets = FedDatasetsClassification(poc_args, train_data, valid_data, batch_size, inner_loop, class_num=10)
+    fed_datasets = FedDatasetsClassification(poc_args, train_data, valid_data, batch_size, args.inner_loop, class_num=10)
 
     clients = []
     for client_id in range(poc_args.worker_num):
         client = Process(target=run_client, args=(client_id,
+                                                  poc_args.optimizer,
                                                   fed_datasets.fed_dataset(client_id)["train"],
                                                   fed_datasets.fed_dataset(client_id)["valid"],
-                                                  "cuda"))
+                                                  args.device,
+                                                  args.inner_loop))
         client.start()
         clients.append(client)
 

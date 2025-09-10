@@ -10,6 +10,9 @@ class ConLPoCArguments:
     partition_alpha: float = 10.
     random_seed: int = 42
 
+    # optimizer
+    optimizer: str = "dsgd"
+
     # device args
     worker_num: int = 1
 
