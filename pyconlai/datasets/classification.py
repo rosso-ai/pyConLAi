@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Dict
-from torch.utils.data import Dataset, DataLoader
-from .mixin import FedDatasetsMixin, FedInnerLoopSampler
+from torch.utils.data import Dataset, DataLoader, Subset
+from .mixin import FedDatasetsMixin
 from ..context import ConLPoCArguments
 
 
@@ -67,8 +67,7 @@ class FedDatasetsClassification(FedDatasetsMixin):
         datasize = {}
 
         for client_idx in range(self._clients_num):
-            _sampler = FedInnerLoopSampler(self._batch_size, self._inner_loop, indices[client_idx])
-            dataloader[client_idx] = DataLoader(dataset=dataset, batch_size=self._batch_size, sampler=_sampler)
+            dataloader[client_idx] = DataLoader(dataset=Subset(dataset, indices[client_idx]), batch_size=self._batch_size)
             datasize[client_idx] = len(indices[client_idx])
 
         return dataloader, datasize

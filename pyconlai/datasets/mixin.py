@@ -1,7 +1,6 @@
-from typing import List
 from logging import getLogger
 from abc import ABCMeta
-from torch.utils.data import Dataset, DataLoader, sampler
+from torch.utils.data import Dataset, DataLoader
 from ..context import ConLPoCArguments
 
 
@@ -50,33 +49,3 @@ class FedDatasetsMixin(metaclass=ABCMeta):
     @property
     def class_num(self):
         return self._class_num
-
-
-class FedInnerLoopSampler(sampler.Sampler[int]):
-    def __init__(self, batch_size: int, inner_loop: int, indices: List):
-        super().__init__()
-        self._n_data = len(indices)
-        self._batch_size = batch_size
-        self._inner_loop = inner_loop
-
-        self._indices = []
-        self._data_indices = indices
-        self._n_data_batch = self._batch_size * self._inner_loop if self._inner_loop is not None else self._n_data
-        self._n_offset = 0
-
-    def __len__(self):
-        return self._n_data_batch
-
-    def __iter__(self):
-        # Removal of used data
-        self._indices = self._indices[self._n_offset:]
-        self._n_offset = 0  # reset start index
-
-        # Prepare at least 1 epoch's worth of data in the index list that stores the data call order.
-        while len(self._indices) <= self._n_data_batch:
-            self._indices += self._data_indices
-
-        sidx, eidx = self._n_offset, self._n_offset + self._n_data_batch
-        indices = self._indices[sidx:eidx].copy()
-        self._n_offset = eidx
-        yield from indices
