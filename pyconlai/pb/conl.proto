@@ -6,9 +6,8 @@ message ConLMetrics {
 }
 
 message ConLStats {
-  string src = 1;
-  int32 round = 2;
-  repeated ConLMetrics metrics = 3;
+  int32 round = 1;
+  repeated ConLMetrics metrics = 2;
 }
 
 message ConLParams {
