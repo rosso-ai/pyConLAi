@@ -6,7 +6,7 @@ from torchvision import models
 from torchvision import datasets
 from torchvision.transforms import transforms
 from multiprocessing import Process
-from pyconlai import load_optimizer, ConLPoCArguments, FedDatasetsClassification
+from pyconlai import load_optimizer, ConLPoCArguments, ConLServer, FedDatasetsClassification
 
 formatter = '%(asctime)s [%(name)s] %(levelname)s :  %(message)s'
 logging.basicConfig(level=logging.INFO, format=formatter)
@@ -95,7 +95,7 @@ def main():
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument("config_path", type=str, help="path of config file")
     arg_parser.add_argument("--device", type=str, default="cuda", help="device name (cuda or cpu)")
-    arg_parser.add_argument("--inner_loop", type=int, default=20, help="communication frequency")
+    arg_parser.add_argument("--inner_loop", type=int, default=10, help="communication frequency")
     args = arg_parser.parse_args()
 
     poc_args = ConLPoCArguments.from_yml(args.config_path)
@@ -109,19 +109,21 @@ def main():
     # Split the CIFAR10 dataset for each client
     fed_datasets = FedDatasetsClassification(poc_args, train_data, valid_data, batch_size, args.inner_loop, class_num=10)
 
-    clients = []
-    for client_id in range(poc_args.worker_num):
-        client = Process(target=run_client, args=(client_id,
-                                                  poc_args.optimizer,
-                                                  fed_datasets.fed_dataset(client_id)["train"],
-                                                  fed_datasets.fed_dataset(client_id)["valid"],
-                                                  args.device,
-                                                  args.inner_loop))
-        client.start()
-        clients.append(client)
+    server = ConLServer("localhost", 9200)
+    with server.run_in_thread():
+        clients = []
+        for client_id in range(poc_args.worker_num):
+            client = Process(target=run_client, args=(client_id,
+                                                      poc_args.optimizer,
+                                                      fed_datasets.fed_dataset(client_id)["train"],
+                                                      fed_datasets.fed_dataset(client_id)["valid"],
+                                                      args.device,
+                                                      args.inner_loop))
+            client.start()
+            clients.append(client)
 
-    for client in clients:
-        client.join()
+        for client in clients:
+            client.join()
 
 
 if __name__ == "__main__":

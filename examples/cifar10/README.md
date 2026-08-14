@@ -4,6 +4,10 @@
 The following command will run one server and two clients and start learning.  
 
 ```shell
+export PYTHONPATH=$PYTHONPATH:../../
+```
+
+```shell
 # Run 
 python run.py ./conf/dsgd_cifar10_mobilenet.yaml
 ```

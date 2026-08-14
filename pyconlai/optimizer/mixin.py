@@ -1,6 +1,7 @@
 import torch
 import pickle
 import websocket
+import uuid
 from typing import Dict
 from torch import nn
 from torch.optim.optimizer import Optimizer
@@ -12,13 +13,14 @@ class ConLOptimizer(Optimizer, metaclass=ABCMeta):
     def __init__(self, path: str, org_optimizer: Optimizer, parameters, inner_loop: int = 10, eta: float=0.1):
         self._org_optimizer = org_optimizer
         self._server_url = path
+        self._clinent_id = str(uuid.uuid4())
         self._round = 0
         self._inner_loop = inner_loop
         self._inner_cnt = 0
         self._diff_latest = 0.
         self._criterion = nn.MSELoss(reduction="sum")
 
-        ws_target_url = "ws://%s/ws" % path
+        ws_target_url = "ws://%s/ws/%s" % (path, self._clinent_id)
         self._ws = websocket.create_connection(ws_target_url)
 
         defaults = dict(eta=eta)
